@@ -1,0 +1,41 @@
+<%- include('../layouts/header') %>
+<main>
+    <%= validationErrors.find(e=>console.log(e.param)) %>
+    <% if (errorMessage) { %>
+    <div class="user-message user-message--error"><%= errorMessage %></div>
+    <% } %>
+    <form class="product-form" action="/admin/<% if(editing) { %>edit-product<% }else{ %>add-product<% } %>"
+        method="POST">
+        <div class="form-control">
+            <label for="title">Title</label>
+            <input type="text" name="title"
+                class="<%= validationErrors.find(e=>e.param === "email") ? 'invalid' : '' %>" id="title"
+                value="<%= editing ? product.title : '' %>">
+        </div>
+        <div class="form-control">
+            <label for="price">Price</label>
+            <input type="text" name="price"
+                class="<%= validationErrors.find(e=>e.param === "price") ? 'invalid' : '' %>" id="price"
+                value="<%= editing ? product.price: '' %>">
+        </div>
+        <div class="form-control">
+            <label for="description">Description</label>
+            <textarea name="description"
+                class="<%= validationErrors.find(e=>e.param === "description") ? 'invalid' : '' %>"
+                id="description"><%= editing ? product.description : '' %></textarea>
+        </div>
+        <div class=" form-control">
+            <label for="imageUrl">ImageUrl</label>
+            <input type="text" name="imageUrl"
+                class="<%= validationErrors.find(e=>e.param === "imageUrl") ? 'invalid' : '' %>" id="imageUrl"
+                value="<%= editing ? product.imageUrl : '' %>">
+        </div>
+        <% if (editing) { %>
+        <input type="hidden" name="productId" value="<%= product.id %>">
+        <% } %>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn" type="submit">Edit Product</button>
+        <!-- <button class="btn" type="submit"><% editing ? "Edit Product" : "Add Product" %></button> -->
+    </form>
+</main>
+<%- include('../layouts/footer') %>

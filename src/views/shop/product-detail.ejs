@@ -1,0 +1,12 @@
+<%- include('../layouts/header') %>
+<main class="centered">
+    <h1><%= product.title %> </h1>
+    <hr>
+    <div><img src="<%= product.imageUrl %> " alt="" width="250" height="250"></div>
+    <h2><%= product.price %> </h2>
+    <p><%= product.description %> </p>
+    <% if (isAuthenticated) { %>
+    <%- include('../layouts/add-to-cart', {product}) %>
+    <% } %>
+</main>
+<%- include('../layouts/footer') %>

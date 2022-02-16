@@ -1,0 +1,26 @@
+<%- include('../layouts/header') %>
+<main>
+    <% if (errorMessage) { %>
+    <div class="user-message user-message--error"><%= errorMessage %></div>
+    <% } %>
+    <form class="login-form" action="/signup" method="POST">
+        <div class="form-control">
+            <label for="email">Email</label>
+            <input type="text" class="<%= validationErrors.find(e=>e.param === 'email') ? 'invalid' : '' %>"
+                name="email" id="email" value="<%= oldInput.email %>">
+        </div>
+        <div class="form-control">
+            <label for="password">Password</label>
+            <input type="password" class="<%= validationErrors.find(e=>e.param === 'password') ? 'invalid' : '' %>"
+                name="password" id="password" value="<%= oldInput.password %>">
+        </div>
+        <div class="form-control">
+            <label for="password2">Confirm Password</label>
+            <input type="password" class="<%= validationErrors.find(e=>e.param === 'password2') ? 'invalid' : '' %>"
+                name="password2" id="password2" value="<%= oldInput.password2 %>">
+        </div>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn" type="submit">Sign Up</button>
+    </form>
+</main>
+<%- include('../layouts/footer') %>
