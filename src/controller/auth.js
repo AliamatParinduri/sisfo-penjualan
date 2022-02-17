@@ -47,7 +47,11 @@ const postLogin = async (req,res,next) => {
         });
     }
 
-    const user = await userModel.findOne({email}).then(e=>e).catch(e=>console.log(e));
+    const user = await userModel.findOne({email}).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
     
     if (!user) {
         return res.status(422).render(path.join(rootDir, 'src', 'views', 'auth', 'login'),{
@@ -58,7 +62,11 @@ const postLogin = async (req,res,next) => {
             validationErrors: [{param: 'email'}]
         });
     }
-    const comparedPassword = await bcrypt.compare(password, user.password).then(e=>e).catch(err => console.log(err));
+    const comparedPassword = await bcrypt.compare(password, user.password).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 
     if (!comparedPassword) {
         return res.status(422).render(path.join(rootDir, 'src', 'views', 'auth', 'login'),{
@@ -105,35 +113,39 @@ const postSignUp = async (req,res,next) => {
         });
     }
     
-    try {
-        const newPassword = await bcrypt.hash(password, 12).then(e=>e).catch(e=>console.log(e))
-        userModel.create({
-            email: email,
-            password: newPassword,
-            cart: {
-                items: []
-            },
-        })
+    const newPassword = await bcrypt.hash(password, 12).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    })
+    userModel.create({
+        email: email,
+        password: newPassword,
+        cart: {
+            items: []
+        },
+    }).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    })
 
-        const mailData = {
-            from: 'personalia@gmail.com',  // sender address
-            to: req.body.email,   // list of receivers
-            subject: 'Signup succeeded!',
-            // text: text,
-            html: `<b>Hey there! </b>
-                    <br> This is our first message sent with Nodemailer<br/>`,
-        };
+    const mailData = {
+        from: 'personalia@gmail.com',  // sender address
+        to: req.body.email,   // list of receivers
+        subject: 'Signup succeeded!',
+        // text: text,
+        html: `<b>Hey there! </b>
+                <br> This is our first message sent with Nodemailer<br/>`,
+    };
 
-        transporter.sendMail(mailData, function (err, info) {
-            if(err) {
-                return console.log(err)
-            }
-            // res.status(200).send({message:"Mail send", message_id: info.messageId});
-        });
+    transporter.sendMail(mailData, function (err, info) {
+        if(err) {
+            return console.log(err)
+        }
+        // res.status(200).send({message:"Mail send", message_id: info.messageId});
+    });
 
-    } catch (err) {
-        console.log(err)
-    }
     res.redirect('/login')
 }
 
@@ -156,7 +168,11 @@ const postResetPassword = (req,res,next) => {
         if (err) return res.redirect('reset');
 
         const token = buffer.toString('hex');
-        const user = await userModel.findOne({email: req.body.email}).then(e =>e).catch(e=>console.log(e));
+        const user = await userModel.findOne({email: req.body.email}).then(e =>e).catch(e=>{
+            const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+        });
         
         if (!user) {
             req.flash('error', 'Account Tidak Ditemukan');
@@ -187,7 +203,11 @@ const postResetPassword = (req,res,next) => {
 
 const getNewPassword = async (req,res,next) => {
     const resetToken = req.params.token;
-    const user = await userModel.findOne({resetToken, resetTokenExpiration: {$gt: Date.now()}}).then(e=>e).catch(e=>console.log(e));
+    const user = await userModel.findOne({resetToken, resetTokenExpiration: {$gt: Date.now()}}).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 
     if (user) {
         res.render(path.join(rootDir, 'src', 'views', 'auth', 'new_password'),{
@@ -209,14 +229,22 @@ const postNewPassword = async (req,res,next) => {
         req.flash("error", "Password Tidak Cocok, ");
         return res.redirect(`/reset_password/${resetToken}`);
     }
-    const user = await userModel.findOne({resetToken, resetTokenExpiration: {$gt: Date.now()}, _id}).then(e=>e).catch(e=>console.log(e));
+    const user = await userModel.findOne({resetToken, resetTokenExpiration: {$gt: Date.now()}, _id}).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
     
     if (!user) {
         req.flash("error", "User Tidak Ditemukan");
         return res.redirect('/login');
     }
 
-    const hashPassword = await bcrypt.hash(password,12).then(e=>e).catch(e=>console.log(e));
+    const hashPassword = await bcrypt.hash(password,12).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
     user.password = hashPassword;
     user.resetToken = undefined;
     user.resetTokenExpiration = undefined;

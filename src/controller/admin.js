@@ -2,6 +2,7 @@ const path = require('path');
 const productModel = require('../models/products');
 const rootDir = require('../util/path')
 const {validationResult} = require('express-validator');
+const mongoose = require('mongoose');
 
 const getAddProducts = async (req,res) => {
     res.render(path.join(rootDir, 'src', 'views', 'admin', 'edit-product'), {
@@ -15,10 +16,13 @@ const getAddProducts = async (req,res) => {
 };
 
 const storeProduct = (req,res,next) => {
-    const title = req.body.title
-    const price = req.body.price
-    const description = req.body.description
-    const imageUrl = req.body.imageUrl
+    const title = req.body.title;
+    console.log(title);
+    const price = req.body.price;
+    const description = req.body.description;
+    const imageUrl = req.file;
+    console.log(imageUrl);
+    
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -34,18 +38,18 @@ const storeProduct = (req,res,next) => {
         })
     }
     const products = new productModel({
+        _id: new mongoose.Types.ObjectId("61ffea25297233d01776f22a"),
         title,
         price,
         description,
         imageUrl,
         userId: req.user
     })
-    try {
-        products.save();
-        res.status(200).redirect('/');
-    } catch (error) {
-        res.status(422).json("gagal");
-    }
+    products.save().then(e=>res.status(200).redirect('/')).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 }
 
 const editProducts = async (req,res) => {
@@ -90,7 +94,11 @@ const updateProduct = async (req,res,next) => {
             validationErrors: [errors.array()[0]]
         })
     }
-    const product = await productModel.findById(productId).then(e=>e).catch(e=>console.log(e));
+    const product = await productModel.findById(productId).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
     
     if (product.userId.toString() !== req.user._id.toString()) {
         req.flash("error", "Anda tidak memiliki akses untuk edit data ini!");
@@ -107,7 +115,11 @@ const updateProduct = async (req,res,next) => {
 
 const deleteProduct = async (req,res,next) => {
     const prodId = req.body.productId;
-    await productModel.deleteOne({id: prodId, userId: req.user}).then(e=>e).catch(e=>console.log(e));
+    await productModel.deleteOne({id: prodId, userId: req.user}).then(e=>e).catch(e=>{
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
     res.redirect('/admin/products');
 }
 

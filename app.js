@@ -20,6 +20,7 @@ mongoose.connect(mongoDB_Uri);
 const path = require('path');
 const bodyParser = require('body-parser');
 const flash = require('connect-flash');
+const multer = require('multer');
 
 const authRoutes = require('./src/routes/auth');
 const adminRoutes = require('./src/routes/admin');
@@ -28,13 +29,31 @@ const shopRoutes = require('./src/routes/shop');
 const rootDir = require('./src/util/path');
 
 const userModel = require('./src/models/user');
-const { errorNotFound } = require('./src/controller/error');
+const { errorNotFound, error500 } = require('./src/controller/error');
+const { createVerify } = require('crypto');
 
 app.set('view engine', 'ejs');
 app.set('views', 'src/views');
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
+
+const fileStorage = multer.diskStorage({
+    destination: path.join(__dirname, "src", "public", "images"),
+    filename: (req,file,cb) => {
+        cb(null, new Date().toDateString() + " - " + file.originalname)
+    },
+});
+
+const fileFilter = (req,file,cb)=>{
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
+        cb(null, true);
+    }else{
+        cb(null, false);
+    }
+};
+
+app.use(multer({storage: fileStorage, fileFilter:fileFilter,limits:3000000}).single('image'));
 
 app.use(express.static(path.join(rootDir, "src", "public")))
 
@@ -43,12 +62,13 @@ app.use(csrfProtection);
 app.use(flash());
 
 app.use(async (req,res,next) => {
-    if (req.session.user) {
-        const user = await userModel.findById(req.session.user._id);
+    if (!req.session.user) {
+        return next();
+    }
+    const user = await userModel.findById(req.session.user._id ).then(e=>e).catch(e=>console.log(e));
         if (user) {
             req.user = user;
         }
-    }
     next();
 })
 
@@ -66,7 +86,12 @@ app.use('/admin', adminRoutes.router);
 app.use(shopRoutes);
 app.use(authRoutes);
 
+app.get('/500', error500)
 app.use(errorNotFound)
+
+app.use((error,req,res,next)=>{
+    res.redirect('/500')
+});
 
 app.listen(port, async () => {
     console.log(`server running in http://localhost:${port}`)
