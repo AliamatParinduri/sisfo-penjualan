@@ -7,13 +7,24 @@ const productModel = require('../models/products');
 const orderModel = require('../models/order');
 const rootDir = require('../util/path');
 
+const Items_per_page = 2;
+
 const getAllProducts = async (req,res,next) => {
-    const products = await productModel.find({userId: req.user});
+    const page = +req.query.page || 1;
+    const productCount = await productModel.find({userId: req.user}).countDocuments();
+    const products = await productModel.find({userId: req.user}).skip((page - 1) * Items_per_page).limit(Items_per_page).then(e=>e).catch(e=>console.log(e));
     res.render(path.join(rootDir, 'src', 'views', 'shop', 'product-list'),{
         prods: products,
         pageTitle: 'All Product',
         path: '/products',
         hasProducts: products.length > 0 ? true: false,
+        totalProduct: productCount,
+        currentPage: page,
+        hasNextPage: Items_per_page * page < productCount,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil((productCount/Items_per_page))
     })
 }
 
@@ -28,12 +39,22 @@ const getProductById = async (req,res,next) => {
 }
 
 const getIndex = async (req,res,next) => {
-    const products = await productModel.find({userId: req.user});
+    const page = +req.query.page || 1;
+    const productCount = await productModel.find({userId: req.user}).countDocuments();
+    const products = await productModel.find({userId: req.user}).skip((page - 1) * Items_per_page).limit(Items_per_page).then(e=>e).catch(e=>console.log(e));
+
     res.render(path.join(rootDir, 'src', 'views', 'shop', 'index'),{
         prods: products,
         pageTitle: 'shop',
         path: '/',
         hasProducts: products.length > 0 ? true: false,
+        totalProduct: productCount,
+        currentPage: page,
+        hasNextPage: Items_per_page * page < productCount,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil((productCount/Items_per_page))
     })
 }
 
