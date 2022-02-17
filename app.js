@@ -36,10 +36,10 @@ app.set('view engine', 'ejs');
 app.set('views', 'src/views');
 
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.urlencoded({extended: false}))
 
 const fileStorage = multer.diskStorage({
-    destination: path.join(__dirname, "src", "public", "images"),
+    destination: "src/public/images",
     filename: (req,file,cb) => {
         cb(null, new Date().toDateString() + " - " + file.originalname)
     },
@@ -49,6 +49,8 @@ const fileFilter = (req,file,cb)=>{
     if (file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
         cb(null, true);
     }else{
+        hasError = true;
+        errorMessage = "Tipe gambar tidak didukung";
         cb(null, false);
     }
 };
@@ -56,6 +58,7 @@ const fileFilter = (req,file,cb)=>{
 app.use(multer({storage: fileStorage, fileFilter:fileFilter,limits:3000000}).single('image'));
 
 app.use(express.static(path.join(rootDir, "src", "public")))
+app.use('/src/public/images/',express.static(path.join(rootDir, "src", "public", "images")))
 
 app.use(session({secret: 'aliamat parinduri', resave: false, saveUninitialized: false, store: store}))
 app.use(csrfProtection);

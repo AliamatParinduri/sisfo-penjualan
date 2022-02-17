@@ -1,8 +1,11 @@
 const path = require('path');
-const productModel = require('../models/products');
-const rootDir = require('../util/path')
-const {validationResult} = require('express-validator');
+
 const mongoose = require('mongoose');
+const {validationResult} = require('express-validator');
+
+const productModel = require('../models/products');
+const rootDir = require('../util/path');
+const fileHelp = require('../util/file');
 
 const getAddProducts = async (req,res) => {
     res.render(path.join(rootDir, 'src', 'views', 'admin', 'edit-product'), {
@@ -17,12 +20,22 @@ const getAddProducts = async (req,res) => {
 
 const storeProduct = (req,res,next) => {
     const title = req.body.title;
-    console.log(title);
     const price = req.body.price;
     const description = req.body.description;
-    const imageUrl = req.file;
-    console.log(imageUrl);
-    
+    const image = req.file;
+
+    if (!image) {
+        return res.status(422).render(path.join(rootDir, 'src', 'views', 'admin', 'edit-product'), {
+            pageTitle: 'Add Product',
+            path: '/admin/add-product',
+            editing: false,
+            hasError: true,
+            product: {title,price,description},
+            errorMessage: "File tidak dalam format gambar",
+            validationErrors: []
+        })
+    }
+    const imageUrl = image.path;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -38,7 +51,6 @@ const storeProduct = (req,res,next) => {
         })
     }
     const products = new productModel({
-        _id: new mongoose.Types.ObjectId("61ffea25297233d01776f22a"),
         title,
         price,
         description,
@@ -78,7 +90,7 @@ const updateProduct = async (req,res,next) => {
     const title = req.body.title;
     const price = req.body.price;
     const description = req.body.description;
-    const imageUrl = req.body.imageUrl;
+    const image = req.file;
     const productId = req.body.productId;
     const errors = validationResult(req);
 
@@ -104,22 +116,28 @@ const updateProduct = async (req,res,next) => {
         req.flash("error", "Anda tidak memiliki akses untuk edit data ini!");
         return res.redirect('/');
     }
-    product.title = title,
-    product.price = price,
-    product.description = description,
-    product.imageUrl = imageUrl,
+    product.title = title;
+    product.price = price;
+    product.description = description;
+    if (image) {
+        fileHelp.deleteFile(product.imageUrl);
+        product.imageUrl = image.path;
+    }
 
     product.save();
     res.redirect('/admin/products');
 }
 
 const deleteProduct = async (req,res,next) => {
-    const prodId = req.body.productId;
-    await productModel.deleteOne({id: prodId, userId: req.user}).then(e=>e).catch(e=>{
-        const error = new Error(e);
-        error.httpStatusCode = 500;
-        return next(error);
-    });
+    const prodId = req.body.productId.trim();
+    const product = await productModel.findById(prodId).then(e=>e).catch(e=>console.log(e));
+    
+    if (!product) {
+        return next(new Error('Product tidak ditemukan!'));
+    }
+    fileHelp.deleteFile(product.imageUrl);
+    
+    await productModel.deleteOne({id: prodId, userId: req.user}).then(e=>e).catch(e=>next(new Error(e)));
     res.redirect('/admin/products');
 }
 

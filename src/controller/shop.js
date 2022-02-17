@@ -1,4 +1,8 @@
+const fs = require('fs');
 const path = require('path');
+
+const pdfDocument = require('pdfkit')
+
 const productModel = require('../models/products');
 const orderModel = require('../models/order');
 const rootDir = require('../util/path');
@@ -57,6 +61,7 @@ const deleteCart = async (req,res,next) => {
 
 const getOrders = async (req,res,next) => {
     const orders = await orderModel.find({"user.userId": req.user})
+    
     res.render(path.join(rootDir, 'src', 'views', 'shop', 'orders'),{
         pageTitle: 'Your Orders',
         path: '/orders',
@@ -89,4 +94,34 @@ const getCheckout = (req,res,next) => {
     })
 }
 
-module.exports = {getAllProducts,getIndex,getCart,getCheckout,getOrders,getProductById,storeCart,deleteCart,storeOrder};
+const getInvoice = async (req,res,next) => {
+    const orderId = req.params.orderId;
+    const order = await orderModel.findById(orderId).then(e=>e).catch(e=>next(new Error(e)));
+
+    if (!order) {
+        return next(new Error("Order tidak ditemukan"));
+    }
+    if (order.user.userId.toString() !== req.user._id.toString()) {
+        return next(new Error("Unautorized"));
+    }
+
+    const invoiceName = 'Invoice-'+ orderId + '.pdf';
+    const invoicePath = path.join(__dirname, "..", 'data', 'invoices', invoiceName);
+
+    const pdfDoc = new pdfDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="'+ invoiceName +'"');
+
+    pdfDoc.pipe(fs.createWriteStream(invoicePath));
+    pdfDoc.pipe(res);
+
+    pdfDoc.fontSize(26).text('Invoice', {
+        underline: true
+    });
+    pdfDoc.text('----------------------------');
+    pdfDoc.text(order.user.userId);
+
+    pdfDoc.end();
+}
+
+module.exports = {getAllProducts,getIndex,getCart,getCheckout,getOrders,getProductById,storeCart,deleteCart,storeOrder,getInvoice};

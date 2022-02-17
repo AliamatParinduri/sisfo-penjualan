@@ -10,7 +10,7 @@ router.route('/add-product', isAtuh)
     .get(adminRoute.getAddProducts)
     .post([
     body('title').isString().isLength({min:3}).trim(),
-    body('price').isNumeric(),
+    body('price').isFloat(),
     body('description').isLength({min: 5, max:125}).trim()
 ],adminRoute.storeProduct)
 

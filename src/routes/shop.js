@@ -1,21 +1,22 @@
 const express = require('express');
 
-const isAtuh = require('../middleware/is-auth');
+const isAuth = require('../middleware/is-auth');
 const router = express.Router();
-const { getAllProducts, getIndex, getCart, getCheckout, getOrders, getProductById, storeCart, deleteCart, storeOrder } = require('../controller/shop');
+const shopController = require('../controller/shop');
 
 router.route('/')
-    .get(getIndex)
+    .get(shopController.getIndex)
 
-router.get('/products', getAllProducts);
-router.get('/products/:productId',getProductById);
-router.get('/products/delete', isAtuh);
+router.get('/products', shopController.getAllProducts);
+router.get('/products/:productId',shopController.getProductById);
 
-router.get('/cart', isAtuh,getCart);
-router.post('/cart', isAtuh,storeCart);
-router.get('/checkout', isAtuh,getCheckout);
-router.get('/orders', isAtuh,getOrders);
-router.post('/create-order', isAtuh,storeOrder);
-router.post('/cart-delete-item', isAtuh,deleteCart);
+router.get('/cart', isAuth,shopController.getCart);
+router.post('/cart', isAuth,shopController.storeCart);
+router.get('/checkout', isAuth,shopController.getCheckout);
+router.get('/orders', isAuth,shopController.getOrders);
+router.post('/create-order', isAuth,shopController.storeOrder);
+router.post('/cart-delete-item', isAuth,shopController.deleteCart);
+
+router.get('/orders/:orderId', isAuth,shopController.getInvoice);
 
 module.exports = router;
